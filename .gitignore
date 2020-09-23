@@ -1,0 +1,12 @@
+# Directories
+.vs/
+build/
+
+# Files
+*.user
+*.sln
+*.vcxproj
+*.filters
+*.ini
+*.cfg
+*.lnk
