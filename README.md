@@ -1,4 +1,4 @@
-[//]: # "[Sechuran](/resources/Banner.png?raw=true "Sechuran")"
+<!-- [Sechuran](/resources/Banner.png?raw=true "Sechuran") -->
 
 <p align="center">
   <a href="https://github.com/FelipeCarlin/Sechuran/releases">Releases</a> |
