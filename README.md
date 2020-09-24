@@ -18,7 +18,7 @@
 
 ## 1.1. Description
 
-This is a game written from scratch, it is more relaxed than other projects I have stalled (like [CubicSquareCreft](https:/www.github.com/FelipeCarlin/CubicSquareCreft), that I plan on continuing someday...). Sechuran aims to be "not so preofessional" so that I don't loose motivation and abandon the project.
+This is a game written from scratch, it is more relaxed than other projects I have stalled (like [CubicSquareCreft](https://www.github.com/FelipeCarlin/CubicSquareCreft), that I plan on continuing someday...). Sechuran aims to be "not so preofessional" so that I don't loose motivation and abandon the project.
 
 Sechuran objectives are:
 
