@@ -44,6 +44,8 @@ struct win32_window_dimension
 global_variable bool GlobalRunning;
 global_variable win32_offscreen_buffer GlobalBackBuffer;
 
+
+
 internal win32_window_dimension
 Win32GetWindowDimension(HWND Window)
 {
@@ -118,8 +120,8 @@ Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, int Height)
 }
 
 internal void
-Win32DisplayBufferInWindow(HDC DeviceContext, win32_offscreen_buffer Buffer,
-                           int WindowWidth, int WindowHeight)
+Win32DisplayBufferInWindow(win32_offscreen_buffer Buffer,
+                           HDC DeviceContext, int WindowWidth, int WindowHeight)
 {
     // TODO(felipe): Filtering.
     StretchDIBits(DeviceContext,
@@ -162,12 +164,61 @@ WindowProc(HWND Window, UINT Message,
         {
         } break;
 
+        case WM_SYSKEYDOWN:
+        case WM_SYSKEYUP:
+        case WM_KEYDOWN:
+        case WM_KEYUP:
+        {
+            uint32 VKCode = (uint32)WParam;
+            bool WasDown = ((LParam & (1 << 30)) != 0);
+            bool IsDown = ((LParam & (1 << 31)) == 0);
+            if(IsDown != WasDown)
+            {
+                if(VKCode == 'W')
+                {
+                }
+                else if(VKCode == 'A')
+                {
+                }
+                else if(VKCode == 'S')
+                {
+                }
+                else if(VKCode == 'D')
+                {
+                }
+                else if(VKCode == 'Q')
+                {
+                }
+                else if(VKCode == 'E')
+                {
+                }
+                else if(VKCode == VK_UP)
+                {
+                }
+                else if(VKCode == VK_LEFT)
+                {
+                }
+                else if(VKCode == VK_DOWN)
+                {
+                }
+                else if(VKCode == VK_RIGHT)
+                {
+                }
+                else if(VKCode == VK_ESCAPE)
+                {
+                }
+                else if(VKCode == VK_SPACE)
+                {
+                }
+            }
+        } break;
+
         case WM_PAINT:
         {
             PAINTSTRUCT Paint;
             HDC DeviceContext = BeginPaint(Window, &Paint);
             win32_window_dimension Dimension = Win32GetWindowDimension(Window);
-            Win32DisplayBufferInWindow(DeviceContext, GlobalBackBuffer,
+            Win32DisplayBufferInWindow(GlobalBackBuffer, DeviceContext,
                                        Dimension.Width, Dimension.Height);
             EndPaint(Window, &Paint);
         } break;
@@ -243,7 +294,7 @@ WinMain(HINSTANCE Instance,
                 DebugRender(GlobalBackBuffer, XOffset, YOffset);
 
                 win32_window_dimension Dimension = Win32GetWindowDimension(Window);
-                Win32DisplayBufferInWindow(DeviceContext, GlobalBackBuffer,
+                Win32DisplayBufferInWindow(GlobalBackBuffer, DeviceContext,
                                            Dimension.Width, Dimension.Height);
 
                 ++XOffset;
