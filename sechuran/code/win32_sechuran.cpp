@@ -8,6 +8,7 @@
 
 #include <windows.h>
 #include <stdint.h>
+#include <xinput.h>
 
 #define internal static
 #define local_persist static
@@ -43,8 +44,39 @@ struct win32_window_dimension
 // TODO(felipe): This is global for now.
 global_variable bool GlobalRunning;
 global_variable win32_offscreen_buffer GlobalBackBuffer;
+global_variable bool GlobalControllerA;
 
+#define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
+typedef X_INPUT_GET_STATE(x_input_get_state);
+X_INPUT_GET_STATE(XInputGetStateStub)
+{
+    return 0;
+}
+global_variable x_input_get_state *XInputGetState_ = XInputGetStateStub;
+#define XInputGetState XInputGetState_
 
+#define X_INPUT_SET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_VIBRATION *pVibration)
+typedef X_INPUT_SET_STATE(x_input_set_state);
+X_INPUT_SET_STATE(XInputSetStateStub)
+{
+    return 0;
+}
+global_variable x_input_set_state *XInputSetState_ = XInputSetStateStub;
+#define XInputSetState XInputSetState_
+
+internal void
+Win32LoadXInput()
+{
+    HMODULE XInputLibrary = LoadLibraryA("xinput1_3.dll");
+    if(XInputLibrary)
+    {
+        XInputGetState = (x_input_get_state *)GetProcAddress(XInputLibrary, "XInputGetState");
+        if(!XInputGetState) {XInputGetState = XInputGetStateStub;}
+        
+        XInputSetState = (x_input_set_state *)GetProcAddress(XInputLibrary, "XInputSetState");
+        if(!XInputSetState) {XInputSetState = XInputSetStateStub;}
+    }
+}
 
 internal win32_window_dimension
 Win32GetWindowDimension(HWND Window)
@@ -77,6 +109,10 @@ DebugRender(win32_offscreen_buffer Buffer, int XOffset,int YOffset)
             uint8 Blue = 40;
 
             uint8 Grey = ((Y + YOffset)%100) ? 40 : 120;
+            if(GlobalControllerA)
+            {
+                Grey += 120;
+            }
             Red = Grey;
             Green = Grey;
             Blue = Grey;
@@ -238,6 +274,8 @@ WinMain(HINSTANCE Instance,
         PSTR CommandLine,
         INT CommandShow)
 {
+    Win32LoadXInput();
+    
     Win32ResizeDIBSection(&GlobalBackBuffer, 1280, 720);
     
     WNDCLASS WindowClass = {};
@@ -291,14 +329,50 @@ WinMain(HINSTANCE Instance,
                     DispatchMessage(&Message);
                 }
 
+                // TODO(felipe): Maybe a separate thread?
+                for(DWORD ControllerIndex = 0;
+                    ControllerIndex < XUSER_MAX_COUNT;
+                    ++ControllerIndex)
+                {
+                    XINPUT_STATE ControllerState;
+                    if(XInputGetState(ControllerIndex, &ControllerState) == ERROR_SUCCESS)
+                    {
+                        // NOTE(felipe): This controller is plugged in.
+                        // TODO(felipe): See if ControllerState.dwPacketNumber increments too rapidly.
+                        XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;
+
+                        bool Up = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
+                        bool Down = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
+                        bool Left = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
+                        bool Right = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
+                        bool Start = (Pad->wButtons & XINPUT_GAMEPAD_START);
+                        bool Back = (Pad->wButtons & XINPUT_GAMEPAD_BACK);
+                        bool LeftShoulder = (Pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);
+                        bool RightShoulder = (Pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
+                        bool AButton = (Pad->wButtons & XINPUT_GAMEPAD_A);
+                        bool BButton = (Pad->wButtons & XINPUT_GAMEPAD_B);
+                        bool XButton = (Pad->wButtons & XINPUT_GAMEPAD_X);
+                        bool YButton = (Pad->wButtons & XINPUT_GAMEPAD_Y);
+                        
+                        int16 StickX = Pad->sThumbLX;
+                        int16 StickY = Pad->sThumbLY;
+
+                        XOffset += StickX >> 12;
+                        YOffset += StickY >> 12;
+
+                        GlobalControllerA = AButton;
+                    }
+                    else
+                    {
+                        // NOTE(felipe): Controller not found.
+                    }
+                }
+
                 DebugRender(GlobalBackBuffer, XOffset, YOffset);
 
                 win32_window_dimension Dimension = Win32GetWindowDimension(Window);
                 Win32DisplayBufferInWindow(GlobalBackBuffer, DeviceContext,
                                            Dimension.Width, Dimension.Height);
-
-                ++XOffset;
-                ++YOffset;
             }
         }
         else
